@@ -1,0 +1,10 @@
+{
+  "id": "trusted-scanner",
+  "mode": "replay",
+  "description": "Allowlisted scanner activity that should remain searchable without creating web exploit alerts.",
+  "packs": ["trusted-scanner"],
+  "expected_outcome": "false_positive_suppressed",
+  "expected_alerts": [],
+  "expected_non_alerts": ["siem-lab-web-exploit-probe"]
+}
+

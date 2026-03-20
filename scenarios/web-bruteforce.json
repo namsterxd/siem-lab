@@ -1,0 +1,24 @@
+{
+  "id": "web-bruteforce",
+  "mode": "live-web",
+  "description": "Run repeated failed login attempts against the vulnerable app through the logging gateway.",
+  "base_url": "http://127.0.0.1:8080",
+  "expected_outcome": "true_positive",
+  "expected_alerts": ["siem-lab-web-login-failures"],
+  "expected_non_alerts": [],
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/rest/user/login",
+      "headers": {
+        "User-Agent": "AttackRunner/1.0"
+      },
+      "json": {
+        "email": "admin@juice-sh.op",
+        "password": "DefinitelyWrong!"
+      },
+      "repeat": 6
+    }
+  ]
+}
+

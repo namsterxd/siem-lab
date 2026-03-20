@@ -1,0 +1,10 @@
+{
+  "id": "false-positive-admin-login",
+  "mode": "replay",
+  "description": "Approved maintenance that still looks suspicious and should alert.",
+  "packs": ["false-positive-admin-login"],
+  "expected_outcome": "false_positive_alert",
+  "expected_alerts": ["siem-lab-root-login-success"],
+  "expected_non_alerts": []
+}
+

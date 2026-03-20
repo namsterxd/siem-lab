@@ -1,0 +1,38 @@
+$ ./lab replay baseline-benign
+{
+  "run_id": "samplebenign01",
+  "scenario_id": "baseline-benign",
+  "pack": "baseline-benign",
+  "documents_indexed": 6,
+  "source_document_ids": [
+    "sample-doc-001",
+    "sample-doc-002"
+  ],
+  "output_path": "exports/replay-baseline-benign-samplebenign01.json"
+}
+
+$ ./lab scenario run web-exploit-probe
+{
+  "scenario_id": "web-exploit-probe",
+  "run_id": "sampleweb001",
+  "expected_alerts": [
+    "siem-lab-web-exploit-probe"
+  ],
+  "documents_indexed": 3,
+  "alerts": [
+    {
+      "kibana": {
+        "alert": {
+          "rule": {
+            "name": "SIEM Lab - Web Exploit Probe"
+          }
+        }
+      },
+      "message": "GET /ftp/package.json.bak -> 404"
+    }
+  ],
+  "output_path": "exports/scenario-web-exploit-probe-sampleweb001.json"
+}
+
+$ ./lab export alerts sampleweb001
+exports/alerts-sampleweb001.ndjson

@@ -1,0 +1,10 @@
+{
+  "id": "linux-reverse-shell",
+  "mode": "replay",
+  "description": "Replay Linux reverse-shell style telemetry.",
+  "packs": ["linux-reverse-shell"],
+  "expected_outcome": "true_positive",
+  "expected_alerts": ["siem-lab-reverse-shell-command"],
+  "expected_non_alerts": []
+}
+

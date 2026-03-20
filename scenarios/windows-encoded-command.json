@@ -1,0 +1,10 @@
+{
+  "id": "windows-encoded-command",
+  "mode": "replay",
+  "description": "Replay Windows-style PowerShell telemetry that should produce a true positive.",
+  "packs": ["windows-encoded-command"],
+  "expected_outcome": "true_positive",
+  "expected_alerts": ["siem-lab-encoded-powershell"],
+  "expected_non_alerts": []
+}
+

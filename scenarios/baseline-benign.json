@@ -1,0 +1,15 @@
+{
+  "id": "baseline-benign",
+  "mode": "replay",
+  "description": "Low-noise baseline activity for dashboards, searches, and parser validation.",
+  "packs": ["baseline-benign"],
+  "expected_outcome": "benign",
+  "expected_alerts": [],
+  "expected_non_alerts": [
+    "siem-lab-root-login-success",
+    "siem-lab-web-exploit-probe",
+    "siem-lab-reverse-shell-command",
+    "siem-lab-encoded-powershell"
+  ]
+}
+
