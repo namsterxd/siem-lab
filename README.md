@@ -1,6 +1,6 @@
 # SIEM Lab
 
-SIEM Lab is a compact local Elastic lab for people who want to get a feel for what SOC-style alert review and detection work actually looks like.
+SIEM Lab is a compact local Elastic lab for people who want to get a feel for what SOC-style alert review and detection work may look like.
 
 It runs on a laptop, loads curated event data, triggers a few live scenarios, and shows you which rules fire. The goal is not to build a full production SIEM. The goal is to give you a clean place to see benign activity, false positives, obvious hits, and alert exports in one workflow.
 
