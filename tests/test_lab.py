@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
+from siem_lab.cases import available_cases, load_case, render_suggested_filters
 from siem_lab.cli import build_parser
 from siem_lab.config import ENV_EXAMPLE_PATH, PACKS_DIR
 from siem_lab.packs import prepare_pack_documents, render_splunk_events
@@ -45,11 +46,48 @@ class ScenarioTests(unittest.TestCase):
                 self.assertIn(pack, available, f"Scenario {name} references missing pack {pack}")
 
 
+class CaseTests(unittest.TestCase):
+    def test_curated_cases_load(self) -> None:
+        names = available_cases()
+        self.assertEqual(
+            names,
+            [
+                "baseline-benign",
+                "false-positive-admin-login",
+                "trusted-scanner",
+                "web-exploit-probe",
+                "windows-encoded-command",
+            ],
+        )
+        for name in names:
+            case = load_case(name)
+            self.assertEqual(case.id, name)
+            self.assertTrue(case.brief_path.exists())
+            self.assertTrue(case.answer_path.exists())
+
+    def test_cases_reference_real_scenarios(self) -> None:
+        scenario_names = set(available_scenarios())
+        for name in available_cases():
+            case = load_case(name)
+            self.assertIn(case.scenario_id, scenario_names)
+
+    def test_case_filters_are_rendered_with_run_id(self) -> None:
+        case = load_case("web-exploit-probe")
+        rendered = render_suggested_filters(case, "run123")
+        self.assertTrue(all("run123" in item for item in rendered))
+
+
 class CLITests(unittest.TestCase):
     def test_cli_choices_include_expected_commands(self) -> None:
         parser = build_parser()
         parsed = parser.parse_args(["replay", "baseline-benign"])
         self.assertEqual(parsed.pack, "baseline-benign")
+
+    def test_case_cli_choices_include_expected_commands(self) -> None:
+        parser = build_parser()
+        parsed = parser.parse_args(["case", "review", "web-exploit-probe", "--run-id", "run123"])
+        self.assertEqual(parsed.name, "web-exploit-probe")
+        self.assertEqual(parsed.run_id, "run123")
 
 
 class PublicRepoTests(unittest.TestCase):
@@ -64,6 +102,9 @@ class PublicRepoTests(unittest.TestCase):
         self.assertIn("sampleweb001", example)
         self.assertNotIn("/home/", example)
         self.assertNotIn("C:\\\\Users\\\\", example)
+
+    def test_learning_path_doc_exists(self) -> None:
+        self.assertTrue(Path("docs/learning-path.md").exists())
 
 
 if __name__ == "__main__":

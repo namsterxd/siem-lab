@@ -99,4 +99,5 @@ You can compare with this sample file:
 
 ## After That
 
+- Read [docs/learning-path.md](learning-path.md) if you want the SOC-style case flow
 - Read [docs/extending.md](extending.md) if you want to add your own data, scenarios, or rules

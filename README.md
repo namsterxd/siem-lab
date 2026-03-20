@@ -96,11 +96,27 @@ This writes the alerts for that run to `exports/alerts-<run-id>.ndjson`.
 
 If you want the slower, step-by-step version, read [docs/quickstart.md](docs/quickstart.md).
 
+## SOC Case Mode
+
+If you want to use the lab more like a beginner SOC analyst exercise, start with the guided cases instead of raw scenarios.
+
+```bash
+./lab case list
+./lab case start web-exploit-probe
+./lab case review web-exploit-probe --run-id <run-id>
+./lab case hint web-exploit-probe
+./lab case answer web-exploit-probe
+```
+
+The curated learner path is in [docs/learning-path.md](docs/learning-path.md).
+
 ## Main Commands
 
 ```bash
 ./lab bootstrap
 ./lab up core
+./lab case list
+./lab case start web-exploit-probe
 ./lab replay baseline-benign
 ./lab scenario run web-bruteforce
 ./lab scenario stop web-bruteforce
@@ -135,9 +151,10 @@ Taken together, these give you a decent first pass at the kinds of signals a SOC
 ## Suggested Order
 
 1. Follow [docs/quickstart.md](docs/quickstart.md)
-2. Look at the sample alert file in [docs/examples/web-exploit-probe-alerts.ndjson](docs/examples/web-exploit-probe-alerts.ndjson)
-3. Read the example guide in [docs/examples/README.md](docs/examples/README.md)
-4. Read [docs/extending.md](docs/extending.md) if you want to add your own scenario
+2. Work through [docs/learning-path.md](docs/learning-path.md)
+3. Look at the sample alert file in [docs/examples/web-exploit-probe-alerts.ndjson](docs/examples/web-exploit-probe-alerts.ndjson)
+4. Read the example guide in [docs/examples/README.md](docs/examples/README.md)
+5. Read [docs/extending.md](docs/extending.md) if you want to add your own scenario
 
 ## Safety
 
@@ -164,6 +181,7 @@ python3 -m unittest discover -s tests -q
 ## Extra Docs
 
 - [docs/quickstart.md](docs/quickstart.md)
+- [docs/learning-path.md](docs/learning-path.md)
 - [docs/extending.md](docs/extending.md)
 - [docs/examples/README.md](docs/examples/README.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)

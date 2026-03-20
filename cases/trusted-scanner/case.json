@@ -1,0 +1,46 @@
+{
+  "id": "trusted-scanner",
+  "title": "Suppressed Noise: Trusted Scanner Traffic",
+  "scenario_id": "trusted-scanner",
+  "difficulty": "medium",
+  "analyst_role": "Tier 1 SOC analyst",
+  "case_type": "suppressed-noise",
+  "starter_path_order": 3,
+  "expected_verdict": "false_positive_suppressed",
+  "learning_objectives": [
+    "Understand why some noisy activity should stay visible but not alert",
+    "Practice checking allowlist logic and suppression conditions",
+    "Distinguish between suspicious-looking requests and actual case-worthy alerts"
+  ],
+  "mitre_attack": [
+    {
+      "id": "T1595",
+      "name": "Active Scanning"
+    }
+  ],
+  "triage_questions": [
+    "Why do these requests look suspicious at first glance?",
+    "What field keeps them from becoming an alert in this lab?",
+    "What is the analyst takeaway when something looks noisy but is expected?"
+  ],
+  "evidence_to_check": [
+    "The requested paths and failed responses",
+    "The user agent value on the web events",
+    "The allowlist label and the absence of a matching alert"
+  ],
+  "suggested_filters": [
+    "labels.lab_run_id: \"{run_id}\"",
+    "labels.lab_run_id: \"{run_id}\" and event.dataset: \"lab.web\"",
+    "labels.lab_run_id: \"{run_id}\" and user_agent.original: \"TrustedScanner/1.0\""
+  ],
+  "hints": [
+    "The paths are meant to look noisy.",
+    "Pay attention to the user agent and the allowlist-related fields.",
+    "This case is about suppression logic working as designed."
+  ],
+  "iocs": [
+    "source.ip=10.10.0.200",
+    "user_agent.original=TrustedScanner/1.0"
+  ],
+  "escalation_guidance": "Do not escalate if the allowlisted scanner context holds. Document it as expected noisy traffic that remained suppressed."
+}

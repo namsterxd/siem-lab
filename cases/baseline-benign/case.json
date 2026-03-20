@@ -1,0 +1,37 @@
+{
+  "id": "baseline-benign",
+  "title": "Baseline Benign: Learn What Normal Looks Like",
+  "scenario_id": "baseline-benign",
+  "difficulty": "easy",
+  "analyst_role": "Tier 1 SOC analyst",
+  "case_type": "benign-baseline",
+  "starter_path_order": 1,
+  "expected_verdict": "benign",
+  "learning_objectives": [
+    "Recognize that not every event stream should create an alert",
+    "Get comfortable filtering on a single run ID",
+    "Learn what a quiet baseline looks like before triaging real alerts"
+  ],
+  "mitre_attack": [],
+  "triage_questions": [
+    "Do you see any alerts tied to this run?",
+    "What kinds of normal activity are present in the dataset?",
+    "Which fields help you prove this is routine activity instead of malicious behavior?"
+  ],
+  "evidence_to_check": [
+    "Search all events for labels.lab_run_id",
+    "Review the mix of authentication, web, process, DNS, and container events",
+    "Confirm that alert exports for this run are empty or stay quiet"
+  ],
+  "suggested_filters": [
+    "labels.lab_run_id: \"{run_id}\"",
+    "labels.lab_run_id: \"{run_id}\" and event.kind: \"signal\""
+  ],
+  "hints": [
+    "Start by checking whether the run produced any alerts at all.",
+    "Look at the messages and the host names. They read like routine admin and service activity.",
+    "This case is about learning the baseline, not chasing a detection."
+  ],
+  "iocs": [],
+  "escalation_guidance": "Do not escalate. Use this run to build intuition for what clean background activity looks like."
+}

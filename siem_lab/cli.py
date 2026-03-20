@@ -6,6 +6,7 @@ import sys
 import uuid
 from pathlib import Path
 
+from .cases import available_cases, find_run_artifacts, load_case, read_case_doc, render_suggested_filters
 from .config import (
     EXPORTS_DIR,
     RULES_PATH,
@@ -98,6 +99,135 @@ def cmd_scenario_stop(args: argparse.Namespace) -> int:
     return 0
 
 
+def _format_heading(title: str) -> str:
+    return f"{title}\n{'=' * len(title)}"
+
+
+def _format_items(items: list[str]) -> str:
+    return "\n".join(f"- {item}" for item in items)
+
+
+def _format_mitre(items: list[dict[str, object]]) -> str:
+    if not items:
+        return "- No ATT&CK technique is attached to this case."
+    return "\n".join(f"- {item['id']}: {item['name']}" for item in items)
+
+
+def cmd_case_list(_: argparse.Namespace) -> int:
+    lines = [_format_heading("Available Cases")]
+    for name in available_cases():
+        case = load_case(name)
+        lines.append(
+            f"{case.id}: {case.title} | difficulty={case.data['difficulty']} | "
+            f"type={case.data['case_type']} | verdict={case.data['expected_verdict']}"
+        )
+    print("\n".join(lines))
+    return 0
+
+
+def cmd_case_start(args: argparse.Namespace) -> int:
+    ensure_env_file()
+    env = load_env()
+    case = load_case(args.name)
+    result = run_scenario(case.scenario_id, ElasticClient(runtime_config(env)), runtime_config(env).alert_wait_seconds)
+    lines = [
+        _format_heading(f"Case: {case.title}"),
+        f"Role: {case.data['analyst_role']}",
+        f"Difficulty: {case.data['difficulty']}",
+        f"Type: {case.data['case_type']}",
+        f"Expected verdict: {case.data['expected_verdict']}",
+        "",
+        read_case_doc(case, "brief"),
+        "",
+        _format_heading("Run Result"),
+        f"Run ID: {result['run_id']}",
+        f"Scenario: {result['scenario_id']}",
+        f"Documents indexed: {result['documents_indexed']}",
+        f"Alerts found: {len(result.get('alerts', []))}",
+        f"Manifest: {result['output_path']}",
+        "",
+        _format_heading("Next Steps"),
+        f"./lab case review {case.id} --run-id {result['run_id']}",
+        f"./lab case hint {case.id}",
+        f"./lab export alerts {result['run_id']}",
+    ]
+    print("\n".join(lines))
+    return 0
+
+
+def cmd_case_review(args: argparse.Namespace) -> int:
+    case = load_case(args.name)
+    manifest_paths = find_run_artifacts(args.run_id)
+    lines = [
+        _format_heading(f"Case Review: {case.title}"),
+        f"Run ID: {args.run_id}",
+        f"Expected verdict: {case.data['expected_verdict']}",
+    ]
+    if manifest_paths:
+        lines.append(f"Run artifact: {manifest_paths[-1]}")
+    else:
+        lines.append("Run artifact: not found yet in exports/")
+    lines.extend(
+        [
+            "",
+            _format_heading("Learning Goals"),
+            _format_items([str(item) for item in case.data["learning_objectives"]]),
+            "",
+            _format_heading("MITRE ATT&CK"),
+            _format_mitre([dict(item) for item in case.data["mitre_attack"]]),
+            "",
+            _format_heading("Triage Questions"),
+            _format_items([str(item) for item in case.data["triage_questions"]]),
+            "",
+            _format_heading("Evidence To Check"),
+            _format_items([str(item) for item in case.data["evidence_to_check"]]),
+            "",
+            _format_heading("Suggested Kibana Filters"),
+            _format_items(render_suggested_filters(case, args.run_id)),
+            "",
+            _format_heading("Escalation Guidance"),
+            str(case.data["escalation_guidance"]),
+            "",
+            _format_heading("Next Steps"),
+            f"./lab case hint {case.id}",
+            f"./lab case answer {case.id}",
+            f"./lab export alerts {args.run_id}",
+        ]
+    )
+    print("\n".join(lines))
+    return 0
+
+
+def cmd_case_hint(args: argparse.Namespace) -> int:
+    case = load_case(args.name)
+    lines = [
+        _format_heading(f"Hints: {case.title}"),
+        _format_items([str(item) for item in case.data["hints"]]),
+    ]
+    print("\n".join(lines))
+    return 0
+
+
+def cmd_case_answer(args: argparse.Namespace) -> int:
+    case = load_case(args.name)
+    lines = [
+        _format_heading(f"Answer Key: {case.title}"),
+        f"Expected verdict: {case.data['expected_verdict']}",
+        "",
+        read_case_doc(case, "answer"),
+    ]
+    if case.data["iocs"]:
+        lines.extend(
+            [
+                "",
+                _format_heading("Key IOCs"),
+                _format_items([str(item) for item in case.data["iocs"]]),
+            ]
+        )
+    print("\n".join(lines))
+    return 0
+
+
 def cmd_export_alerts(args: argparse.Namespace) -> int:
     ensure_env_file()
     client = _client()
@@ -160,6 +290,24 @@ def build_parser() -> argparse.ArgumentParser:
     scenario_stop = scenario_sub.add_parser("stop", help="Stop a scenario.")
     scenario_stop.add_argument("name", choices=available_scenarios())
     scenario_stop.set_defaults(func=cmd_scenario_stop)
+
+    case = subparsers.add_parser("case", help="Run guided analyst cases.")
+    case_sub = case.add_subparsers(dest="case_command", required=True)
+    case_list = case_sub.add_parser("list", help="List the guided analyst cases.")
+    case_list.set_defaults(func=cmd_case_list)
+    case_start = case_sub.add_parser("start", help="Start a guided case.")
+    case_start.add_argument("name", choices=available_cases())
+    case_start.set_defaults(func=cmd_case_start)
+    case_review = case_sub.add_parser("review", help="Review a case after running it.")
+    case_review.add_argument("name", choices=available_cases())
+    case_review.add_argument("--run-id", required=True)
+    case_review.set_defaults(func=cmd_case_review)
+    case_hint = case_sub.add_parser("hint", help="Show hints for a case.")
+    case_hint.add_argument("name", choices=available_cases())
+    case_hint.set_defaults(func=cmd_case_hint)
+    case_answer = case_sub.add_parser("answer", help="Reveal the answer key for a case.")
+    case_answer.add_argument("name", choices=available_cases())
+    case_answer.set_defaults(func=cmd_case_answer)
 
     export = subparsers.add_parser("export", help="Export alerts or Splunk-style pack output.")
     export_sub = export.add_subparsers(dest="export_command", required=True)

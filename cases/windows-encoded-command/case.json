@@ -1,0 +1,47 @@
+{
+  "id": "windows-encoded-command",
+  "title": "True Positive: Encoded PowerShell",
+  "scenario_id": "windows-encoded-command",
+  "difficulty": "medium",
+  "analyst_role": "Tier 1 SOC analyst",
+  "case_type": "true-positive-endpoint",
+  "starter_path_order": 5,
+  "expected_verdict": "true_positive",
+  "learning_objectives": [
+    "Recognize why encoded PowerShell stands out in endpoint telemetry",
+    "Correlate a suspicious parent process with a child process",
+    "Practice turning endpoint evidence into a short triage conclusion"
+  ],
+  "mitre_attack": [
+    {
+      "id": "T1059.001",
+      "name": "Command and Scripting Interpreter: PowerShell"
+    }
+  ],
+  "triage_questions": [
+    "What process behavior caused the alert?",
+    "What does the parent-child process relationship tell you?",
+    "Would you treat this as suspicious enough to escalate?"
+  ],
+  "evidence_to_check": [
+    "The encoded PowerShell command line",
+    "The suspicious child process from PowerShell",
+    "The user and host involved in both events"
+  ],
+  "suggested_filters": [
+    "labels.lab_run_id: \"{run_id}\"",
+    "labels.lab_run_id: \"{run_id}\" and event.dataset: \"lab.windows\"",
+    "labels.lab_run_id: \"{run_id}\" and process.name: \"powershell.exe\""
+  ],
+  "hints": [
+    "Start with the PowerShell command line itself.",
+    "Then look at what launched after it.",
+    "This case is meant to feel like straightforward suspicious endpoint behavior."
+  ],
+  "iocs": [
+    "process.name=powershell.exe",
+    "powershell.command.value=*EncodedCommand*",
+    "process.parent.name=powershell.exe"
+  ],
+  "escalation_guidance": "Escalate as suspicious PowerShell execution with a follow-on child process, and include the host, user, and command-line evidence."
+}

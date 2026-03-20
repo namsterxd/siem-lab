@@ -14,6 +14,7 @@ STATE_DIR = ROOT / "state"
 PACKS_DIR = ROOT / "packs"
 RULES_PATH = ROOT / "rules" / "custom-rules.json"
 SCENARIOS_DIR = ROOT / "scenarios"
+CASES_DIR = ROOT / "cases"
 
 
 def parse_env_file(path: Path) -> dict[str, str]:

@@ -1,0 +1,47 @@
+{
+  "id": "false-positive-admin-login",
+  "title": "False Positive: Root Login That Still Alerts",
+  "scenario_id": "false-positive-admin-login",
+  "difficulty": "easy",
+  "analyst_role": "Tier 1 SOC analyst",
+  "case_type": "false-positive",
+  "starter_path_order": 2,
+  "expected_verdict": "false_positive_alert",
+  "learning_objectives": [
+    "Separate alerting from actual incident severity",
+    "Explain why a true alert can still be a false positive in context",
+    "Practice documenting a non-malicious reason for suspicious activity"
+  ],
+  "mitre_attack": [
+    {
+      "id": "T1078.003",
+      "name": "Valid Accounts: Local Accounts"
+    }
+  ],
+  "triage_questions": [
+    "Why did the rule fire?",
+    "What host and user were involved?",
+    "What evidence points to approved maintenance instead of compromise?"
+  ],
+  "evidence_to_check": [
+    "The root login event and the follow-up sudo activity",
+    "The source IP and host name involved in both events",
+    "The case story and message fields for maintenance context"
+  ],
+  "suggested_filters": [
+    "labels.lab_run_id: \"{run_id}\"",
+    "labels.lab_run_id: \"{run_id}\" and user.name: \"root\"",
+    "labels.lab_run_id: \"{run_id}\" and event.dataset: \"lab.auth\""
+  ],
+  "hints": [
+    "The alert is real. The question is whether the activity is malicious.",
+    "The same source IP and host show up across the short sequence.",
+    "Read the event messages closely before treating this as an incident."
+  ],
+  "iocs": [
+    "user.name=root",
+    "source.ip=10.10.0.5",
+    "host.name=prod-db-01"
+  ],
+  "escalation_guidance": "Document it as a false positive alert tied to approved maintenance unless outside context contradicts the case evidence."
+}

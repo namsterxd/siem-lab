@@ -46,6 +46,7 @@ def main() -> int:
     required = [
         ROOT / "README.md",
         ROOT / "pyproject.toml",
+        ROOT / "docs/learning-path.md",
         ROOT / "docs/examples/web-exploit-probe-alerts.ndjson",
     ]
     for path in required:
