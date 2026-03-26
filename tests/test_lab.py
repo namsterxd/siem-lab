@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import argparse
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from siem_lab.cases import available_cases, load_case, render_suggested_filters
-from siem_lab.cli import build_parser
+from siem_lab.cli import build_parser, cmd_first_run
 from siem_lab.config import ENV_EXAMPLE_PATH, PACKS_DIR
 from siem_lab.packs import prepare_pack_documents, render_splunk_events
 from siem_lab.scenarios import available_scenarios, load_scenario
@@ -83,11 +85,46 @@ class CLITests(unittest.TestCase):
         parsed = parser.parse_args(["replay", "baseline-benign"])
         self.assertEqual(parsed.pack, "baseline-benign")
 
+    def test_cli_choices_include_first_run(self) -> None:
+        parser = build_parser()
+        parsed = parser.parse_args(["first-run"])
+        self.assertEqual(parsed.command, "first-run")
+
     def test_case_cli_choices_include_expected_commands(self) -> None:
         parser = build_parser()
         parsed = parser.parse_args(["case", "review", "web-exploit-probe", "--run-id", "run123"])
         self.assertEqual(parsed.name, "web-exploit-probe")
         self.assertEqual(parsed.run_id, "run123")
+
+    @patch("builtins.print")
+    @patch("siem_lab.cli._replay_pack")
+    @patch("siem_lab.cli._start_core_services")
+    @patch("siem_lab.cli._ensure_bootstrap_ready")
+    def test_first_run_bootstraps_starts_core_and_replays_baseline(
+        self,
+        bootstrap_ready: MagicMock,
+        start_core_services: MagicMock,
+        replay_pack: MagicMock,
+        print_mock: MagicMock,
+    ) -> None:
+        client = MagicMock()
+        bootstrap_ready.return_value = (Path("/tmp/siem/.env"), {"ELASTIC_PASSWORD": "secret"})
+        start_core_services.return_value = (client, "http://127.0.0.1:5601")
+        replay_pack.return_value = {
+            "run_id": "run123",
+            "output_path": "/tmp/siem/exports/replay-baseline-benign-run123.json",
+        }
+
+        result = cmd_first_run(argparse.Namespace())
+
+        self.assertEqual(result, 0)
+        bootstrap_ready.assert_called_once_with()
+        start_core_services.assert_called_once_with({"ELASTIC_PASSWORD": "secret"})
+        replay_pack.assert_called_once_with(client, "baseline-benign", scenario_id="baseline-benign")
+        rendered = "\n".join(str(call.args[0]) for call in print_mock.call_args_list)
+        self.assertIn("First Run Complete", rendered)
+        self.assertIn("run123", rendered)
+        self.assertIn("./lab scenario run web-exploit-probe", rendered)
 
 
 class PublicRepoTests(unittest.TestCase):

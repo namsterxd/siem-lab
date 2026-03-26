@@ -38,28 +38,20 @@ You will need:
 
 Notes:
 
-- On Linux and WSL, `./lab bootstrap` can install Docker Compose if it is missing.
+- On Linux and WSL, `./lab bootstrap` and `./lab first-run` can install Docker Compose if it is missing.
 - On macOS, Docker Desktop should already provide `docker compose`.
 
 ## Quick Start
 
-### 1. Bootstrap the lab
+### Fastest path
 
 ```bash
-./lab bootstrap
+./lab first-run
 ```
 
-This creates a local `.env` if you do not have one yet, generates random local secrets, creates the working folders, and checks Docker Compose.
+This is the easiest setup path. It creates `.env` if needed, creates `exports/` and `state/`, checks Docker Compose, starts Elasticsearch and Kibana, installs the lab detections, and replays `baseline-benign`.
 
-### 2. Start the core services
-
-```bash
-./lab up core
-```
-
-This starts Elasticsearch and Kibana, waits for them to come up, and loads the built-in lab rules.
-
-Then open:
+When it finishes, open:
 
 - `http://127.0.0.1:5601`
 
@@ -68,17 +60,7 @@ Log in with:
 - Username: `elastic`
 - Password: the `ELASTIC_PASSWORD` value from your local `.env`
 
-### 3. Load baseline data
-
-```bash
-./lab replay baseline-benign
-```
-
-This loads a small set of normal activity into the lab. It will print a `run_id` and write a result file into `exports/`.
-
-Keep the `run_id`. That is how the lab ties alerts back to a specific run.
-
-### 4. Run a scenario that should alert
+Then run one scenario that should alert:
 
 ```bash
 ./lab scenario run web-exploit-probe
@@ -86,7 +68,7 @@ Keep the `run_id`. That is how the lab ties alerts back to a specific run.
 
 This starts the vulnerable web app, sends a few suspicious requests through the gateway, waits for detections, and prints the results.
 
-### 5. Export the alerts
+Then export the alerts:
 
 ```bash
 ./lab export alerts <run-id>
@@ -94,7 +76,7 @@ This starts the vulnerable web app, sends a few suspicious requests through the 
 
 This writes the alerts for that run to `exports/alerts-<run-id>.ndjson`.
 
-If you want the slower, step-by-step version, read [docs/quickstart.md](docs/quickstart.md).
+If you want the slower manual setup path, read [docs/quickstart.md](docs/quickstart.md).
 
 ## SOC Case Mode
 
@@ -113,6 +95,7 @@ The curated learner path is in [docs/learning-path.md](docs/learning-path.md).
 ## Main Commands
 
 ```bash
+./lab first-run
 ./lab bootstrap
 ./lab up core
 ./lab case list

@@ -4,11 +4,10 @@ This is the easiest path through the lab.
 
 You will:
 
-1. Set up local files
-2. Start the main services
-3. Load safe sample data
-4. Run one example that should alert
-5. Save the alerts to a file
+1. Run one setup command
+2. Open Kibana
+3. Run one example that should alert
+4. Save the alerts to a file
 
 ## Before You Start
 
@@ -19,50 +18,37 @@ Make sure you have:
 - 6-8 GB of RAM free for Docker
 - Ports `9200`, `5601`, and `8080` free
 
-## Step 1: Set up the lab
+## Step 1: Run the easiest setup path
 
 ```bash
-./lab bootstrap
+./lab first-run
 ```
 
-You should end up with:
+This will:
 
 - a local `.env` file
 - random local passwords and keys
 - `exports/` and `state/` folders
-
-## Step 2: Start the main services
-
-```bash
-./lab up core
-```
-
-You should end up with:
-
+- Elasticsearch and Kibana running
 - Kibana working at `http://127.0.0.1:5601`
 - the `SIEM Lab Logs` data view created
 - the built-in lab rules installed
+- a baseline replay manifest in `exports/`
 
 Log in with:
 
 - Username: `elastic`
 - Password: the `ELASTIC_PASSWORD` value in your `.env`
 
-## Step 3: Load normal sample data
+If you want the slower manual path instead, use:
 
 ```bash
+./lab bootstrap
+./lab up core
 ./lab replay baseline-benign
 ```
 
-You should see:
-
-- a printed `run_id`
-- a new file in `exports/`
-- normal events inside Kibana
-
-`run_id` means the ID for this one run.
-
-## Step 4: Run one example that should alert
+## Step 2: Run one example that should alert
 
 ```bash
 ./lab scenario run web-exploit-probe
@@ -75,7 +61,7 @@ You should see:
 - results that mention `siem-lab-web-exploit-probe`
 - a new scenario file in `exports/`
 
-## Step 5: Save the alerts
+## Step 3: Save the alerts
 
 ```bash
 ./lab export alerts <run-id>

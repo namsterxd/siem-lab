@@ -26,7 +26,7 @@ def _client() -> ElasticClient:
     return ElasticClient(runtime_config(env))
 
 
-def cmd_bootstrap(_: argparse.Namespace) -> int:
+def _ensure_bootstrap_ready() -> tuple[Path, dict[str, str]]:
     ensure_docker()
     env_path = ensure_env_file()
     ensure_directories()
@@ -37,6 +37,54 @@ def cmd_bootstrap(_: argparse.Namespace) -> int:
         install_compose_plugin(env["COMPOSE_PLUGIN_VERSION"])
         if not compose_available():
             raise RuntimeError("Docker Compose plugin installation completed, but docker compose is still unavailable.")
+    return env_path, env
+
+
+def _start_core_services(env: dict[str, str]) -> tuple[ElasticClient, str]:
+    config = runtime_config(env)
+    compose("--profile", "core", "up", "-d", "elasticsearch", "stack-setup", "kibana")
+    client = ElasticClient(config)
+    client.wait_for_elasticsearch()
+    client.wait_for_kibana()
+    client.put_index_template()
+    client.ensure_data_view(config.index_pattern)
+    client.install_prebuilt_rule_assets()
+    client.upsert_custom_rules(RULES_PATH)
+    return client, config.kibana_url
+
+
+def _replay_pack(
+    client: ElasticClient,
+    pack: str,
+    *,
+    run_id: str | None = None,
+    scenario_id: str | None = None,
+    expected_outcome: str | None = None,
+) -> dict[str, object]:
+    resolved_run_id = run_id or uuid.uuid4().hex[:12]
+    resolved_scenario_id = scenario_id or pack
+    prepared = prepare_pack_documents(
+        pack,
+        run_id=resolved_run_id,
+        scenario_id=resolved_scenario_id,
+        expected_outcome_override=expected_outcome,
+    )
+    source_document_ids = client.bulk_index(prepared.documents)
+    EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    manifest = {
+        "run_id": resolved_run_id,
+        "scenario_id": resolved_scenario_id,
+        "pack": pack,
+        "documents_indexed": len(prepared.documents),
+        "source_document_ids": source_document_ids,
+    }
+    output = EXPORTS_DIR / f"replay-{resolved_scenario_id}-{resolved_run_id}.json"
+    output.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    return {**manifest, "output_path": str(output)}
+
+
+def cmd_bootstrap(_: argparse.Namespace) -> int:
+    env_path, _ = _ensure_bootstrap_ready()
     print(f"Environment ready: {env_path}")
     return 0
 
@@ -44,16 +92,8 @@ def cmd_bootstrap(_: argparse.Namespace) -> int:
 def cmd_up(args: argparse.Namespace) -> int:
     if args.target != "core":
         raise RuntimeError(f"Unsupported up target: {args.target}")
-    ensure_env_file()
-    env = load_env()
-    compose("--profile", "core", "up", "-d", "elasticsearch", "stack-setup", "kibana")
-    client = ElasticClient(runtime_config(env))
-    client.wait_for_elasticsearch()
-    client.wait_for_kibana()
-    client.put_index_template()
-    client.ensure_data_view(runtime_config(env).index_pattern)
-    client.install_prebuilt_rule_assets()
-    client.upsert_custom_rules(RULES_PATH)
+    _, env = _ensure_bootstrap_ready()
+    _start_core_services(env)
     print("Elastic core is up and detections are configured.")
     return 0
 
@@ -62,26 +102,33 @@ def cmd_replay(args: argparse.Namespace) -> int:
     ensure_env_file()
     env = load_env()
     client = ElasticClient(runtime_config(env))
-    run_id = args.run_id or uuid.uuid4().hex[:12]
-    scenario_id = args.scenario_id or args.pack
-    prepared = prepare_pack_documents(
+    manifest = _replay_pack(
+        client,
         args.pack,
-        run_id=run_id,
-        scenario_id=scenario_id,
-        expected_outcome_override=args.expected_outcome,
+        run_id=args.run_id,
+        scenario_id=args.scenario_id,
+        expected_outcome=args.expected_outcome,
     )
-    source_document_ids = client.bulk_index(prepared.documents)
-    EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    manifest = {
-        "run_id": run_id,
-        "scenario_id": scenario_id,
-        "pack": args.pack,
-        "documents_indexed": len(prepared.documents),
-        "source_document_ids": source_document_ids,
-    }
-    output = EXPORTS_DIR / f"replay-{scenario_id}-{run_id}.json"
-    output.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    print(json.dumps({**manifest, "output_path": str(output)}, indent=2))
+    print(json.dumps(manifest, indent=2))
+    return 0
+
+
+def cmd_first_run(_: argparse.Namespace) -> int:
+    env_path, env = _ensure_bootstrap_ready()
+    client, kibana_url = _start_core_services(env)
+    manifest = _replay_pack(client, "baseline-benign", scenario_id="baseline-benign")
+    lines = [
+        _format_heading("First Run Complete"),
+        f"Kibana: {kibana_url}",
+        "Username: elastic",
+        f"Password: ELASTIC_PASSWORD in {env_path}",
+        f"Baseline run id: {manifest['run_id']}",
+        f"Baseline manifest: {manifest['output_path']}",
+        "",
+        _format_heading("Next Step"),
+        "./lab scenario run web-exploit-probe",
+    ]
+    print("\n".join(lines))
     return 0
 
 
@@ -270,6 +317,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     bootstrap = subparsers.add_parser("bootstrap", help="Create .env, directories, and ensure docker compose.")
     bootstrap.set_defaults(func=cmd_bootstrap)
+
+    first_run = subparsers.add_parser("first-run", help="Do the easiest end-to-end local lab setup.")
+    first_run.set_defaults(func=cmd_first_run)
 
     up = subparsers.add_parser("up", help="Start the lab core.")
     up.add_argument("target", choices=["core"])
